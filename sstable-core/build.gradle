@@ -1,0 +1,29 @@
+apply plugin: 'maven'
+apply plugin: 'osgi'
+
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+}
+
+javadoc {
+    options {
+        doclet = "org.benjchristensen.doclet.DocletExclude"
+        docletpath = [rootProject.file('./gradle/doclet-exclude.jar')]
+        stylesheetFile = rootProject.file('./gradle/javadocStyleSheet.css')
+        windowTitle = "Hadoop SSTable Javadoc ${project.version}"
+    }
+    options.addStringOption('top').value = '<h2 class="title" style="padding-top:40px">Hadoop SSTable</h2>'
+}
+
+jar {
+    manifest {
+        name = 'sstable-core'
+        instruction 'Bundle-Vendor', 'FullContact'
+        instruction 'Bundle-DocURL', 'https://github.com/fullcontact/hadoop-sstable'
+        instruction 'Import-Package', '!org.junit,!junit.framework'
+        instruction 'Eclipse-ExtensibleAPI', 'true'
+    }
+}

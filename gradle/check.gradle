@@ -1,0 +1,5 @@
+subprojects {
+    // Cobertura
+    apply plugin: 'cobertura'
+    cobertura.coverageFormats = ['xml', 'html']
+}
