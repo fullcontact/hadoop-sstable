@@ -2,26 +2,18 @@
 
 Hadoop SSTable is an InputFormat implementation that supports reading and splitting Cassandra SSTables. Leveraging this input format MapReduce jobs can make use of Cassandra data for offline data analysis.
 
-## Full Documentation
-
-See the [Wiki](https://github.com/fullcontact/hadoop-sstable/wiki/) for full documentation.
-
-See the [Javadoc](http://github.com/fullcontact/hadoop-sstable/javadoc) for the API.
-
 ## Communication
 
 - [GitHub Issues](https://github.com/fullcontact/hadoop-sstable/issues)
 
 ## Binaries
 
-Binaries and dependency information for Maven, Ivy, Gradle and others can be found at [http://search.maven.org] TODO.
-
-Change history and version numbers => [CHANGES.md](https://github.com/fullcontact/hadoop-sstable/blob/master/CHANGES.md) TODO.
+Binaries and dependency information for Maven, Ivy, Gradle and others can be found at [http://search.maven.org]
 
 Example for Gradle:
 
 ```
-compile 'com.fullcontact.hadoop-sstable:hadoop-sstable:x.y.z'
+compile 'com.fullcontact:hadoop-sstable:x.y.z'
 ```
 
 ## Build

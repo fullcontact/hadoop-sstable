@@ -27,7 +27,8 @@ allprojects {
 subprojects {
     apply plugin: 'java'
     apply plugin: 'shadow'
-    group = "com.fullcontact.hadoop-sstable"
+    group = "com.fullcontact"
+    archivesBaseName = "hadoop-sstable"
 
     tasks.withType(Javadoc).each {
         it.classpath = sourceSets.main.compileClasspath
