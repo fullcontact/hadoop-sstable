@@ -2,6 +2,32 @@
 
 Hadoop SSTable is an InputFormat implementation that supports reading and splitting Cassandra SSTables. Leveraging this input format MapReduce jobs can make use of Cassandra data for offline data analysis.
 
+## Configuration
+
+Required:
+
+Cassandra Create Table Statement (used for table metadata)
+```
+hadoop.sstable.cql="CREATE TABLE foo..."
+```
+
+Recommendation:
+
+The Compressed SSTable Reader uses off-heap memory which can accumulate when task JVMs are reused.
+```
+mapred.job.reuse.jvm.num.tasks=1
+```
+
+Additionally, each MapReduce job written using this input format will have it's own set of constraints. We currently
+tune the following settings when running our jobs.
+```
+io.sort.mb
+io.sort.factor
+mapred.reduce.tasks
+hadoop.sstable.split.mb
+mapred.child.java.opts
+```
+
 ## Communication
 
 - [GitHub Issues](https://github.com/fullcontact/hadoop-sstable/issues)
