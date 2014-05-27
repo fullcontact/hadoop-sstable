@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.cql3.QueryProcessor;
 import org.apache.cassandra.cql3.statements.CreateColumnFamilyStatement;
+import org.apache.cassandra.db.ColumnFamilyType;
 import org.apache.cassandra.dht.AbstractPartitioner;
 import org.apache.cassandra.dht.RandomPartitioner;
 import org.apache.cassandra.exceptions.RequestValidationException;
@@ -120,10 +121,12 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
 
         final CreateColumnFamilyStatement statement = getCreateColumnFamilyStatement(cql);
 
-        final CFMetaData cfMetaData;
+        final String keyspace = context.getConfiguration().get(HadoopSSTableConstants.HADOOP_SSTABLE_KEYSPACE, "default");
+        final String columnFamily = context.getConfiguration().get(HadoopSSTableConstants.HADOOP_SSTABLE_COLUMN_FAMILY_NAME, "default");
+        final CFMetaData cfMetaData = new CFMetaData(keyspace, columnFamily, ColumnFamilyType.Standard, statement.comparator, null);
 
         try {
-            cfMetaData = statement.getCFMetaData();
+            statement.applyPropertiesTo(cfMetaData);
         } catch (RequestValidationException e) {
             // Cannot proceed if an error occurs
             throw new RuntimeException("Error configuring SSTable reader. Cannot proceed", e);
