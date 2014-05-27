@@ -39,6 +39,9 @@ public class SSTableSplit extends InputSplit implements Writable {
     private Path file;
     private String[] hosts;
 
+    public SSTableSplit() {
+    }
+
     /**
      * Constructs a split with host information
      *
