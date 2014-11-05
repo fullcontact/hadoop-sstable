@@ -1,22 +1,11 @@
 package com.fullcontact.sstable.example;
 
-import com.google.common.collect.Lists;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.cql3.CFDefinition;
 import org.apache.cassandra.cql3.ColumnIdentifier;
-import org.apache.cassandra.cql3.QueryProcessor;
-import org.apache.cassandra.cql3.statements.CreateColumnFamilyStatement;
-import org.apache.cassandra.db.ColumnFamilyType;
-import org.apache.cassandra.db.CounterColumn;
-import org.apache.cassandra.db.DeletedColumn;
-import org.apache.cassandra.db.ExpiringColumn;
-import org.apache.cassandra.db.IColumn;
-import org.apache.cassandra.db.OnDiskAtom;
-import org.apache.cassandra.db.RangeTombstone;
+import org.apache.cassandra.db.*;
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.db.marshal.BytesType;
-import org.apache.cassandra.db.marshal.CompositeType;
-import org.apache.cassandra.db.marshal.UTF8Type;
 import org.apache.cassandra.io.sstable.SSTableIdentityIterator;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -30,21 +19,12 @@ import java.nio.ByteBuffer;
  * Adapted from Aegisthus JSON parsing.
  */
 public class JsonColumnParser {
-    private final AbstractType columnNameConvertor =
-            CompositeType.getInstance(Lists.<AbstractType<?>>newArrayList(UTF8Type.instance, UTF8Type.instance, UTF8Type.instance));
+    private final CFDefinition cfd;
+    private final AbstractType columnNameConverter;
 
-    private static CFDefinition cfd;
-
-    public JsonColumnParser(final String cql) {
-        try {
-            final CreateColumnFamilyStatement statement = (CreateColumnFamilyStatement) QueryProcessor.parseStatement(cql).prepare().statement;
-            final CFMetaData cfm = new CFMetaData("assess", "kvs_strict", ColumnFamilyType.Standard, statement.comparator, null);
-            statement.applyPropertiesTo(cfm);
-
-            cfd = cfm.getCfDef();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    public JsonColumnParser(final CFMetaData cfMetaData) {
+        this.cfd = cfMetaData.getCfDef();
+        this.columnNameConverter = cfMetaData.comparator;
     }
 
     protected Text getJson(SSTableIdentityIterator rowIterator, Mapper.Context context) {
@@ -100,7 +80,7 @@ public class JsonColumnParser {
             OnDiskAtom atom = rowIterator.next();
             if (atom instanceof IColumn) {
                 IColumn column = (IColumn) atom;
-                String cn = getColumnName(column.name(), columnNameConvertor);
+                String cn = getColumnName(column.name(), columnNameConverter);
                 sb.append("[\"");
                 sb.append(cn);
                 sb.append("\", \"");
