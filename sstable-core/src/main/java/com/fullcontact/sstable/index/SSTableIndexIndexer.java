@@ -28,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.text.DecimalFormat;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
@@ -40,16 +39,17 @@ public class SSTableIndexIndexer {
     private final DecimalFormat decimalFormat;
     private final ListeningExecutorService service;
     private static final String SST_EXTENSION = "-Index.db";
+    private final FileSystem fileSystem;
 
-    public SSTableIndexIndexer(final Configuration configuration) {
+    public SSTableIndexIndexer(final Configuration configuration) throws IOException {
         this.configuration = configuration;
         this.decimalFormat = new DecimalFormat("#0.00");
         this.service = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(10));
+        this.fileSystem = FileSystem.get(configuration);
     }
 
     public void index(final Path sstablePath) throws IOException {
 
-        final FileSystem fileSystem = FileSystem.get(URI.create(sstablePath.toString()), configuration);
         final FileStatus fileStatus = fileSystem.getFileStatus(sstablePath);
 
         if (fileStatus.isDir()) {
@@ -140,7 +140,7 @@ public class SSTableIndexIndexer {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         if (args.length == 0) {
             printUsage();
             System.exit(1);
@@ -160,6 +160,11 @@ public class SSTableIndexIndexer {
     }
 
     public void complete() {
+        try {
+            fileSystem.close();
+        } catch (IOException e) {
+            // No big deal.
+        }
         service.shutdown();
         while (true) {
             if (service.isTerminated()) {
