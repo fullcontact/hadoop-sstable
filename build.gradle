@@ -2,7 +2,6 @@ ext.githubProjectName = 'hadoop-sstable'
 
 apply from: file('gradle/convention.gradle')
 apply from: file('gradle/maven.gradle')
-//apply from: file('gradle/check.gradle')
 apply from: file('gradle/release.gradle')
 
 buildscript {
@@ -10,6 +9,9 @@ buildscript {
         mavenLocal()
         mavenCentral()
         jcenter()
+        maven {
+        	url "https://repository.cloudera.com/artifactory/cloudera-repos/"
+        }
     }
 
     apply from: file('gradle/buildscript.gradle'), to: buildscript
@@ -54,7 +56,9 @@ project(':sstable-core') {
 
         compile 'org.apache.cassandra:cassandra-all:1.2.15'
 
-        compile 'org.apache.hadoop:hadoop-core:1.0.4'
+//        compile 'org.apache.hadoop:hadoop-core:1.0.4'
+
+		compile 'org.apache.hadoop:hadoop-client:2.2.0'
 
         compile 'com.google.guava:guava:16.0.1'
 
@@ -73,4 +77,3 @@ project(':sstable-core') {
         from { configurations.fatjar.collect { it.isDirectory() ? it : zipTree(it) } }
     }
 }
-
