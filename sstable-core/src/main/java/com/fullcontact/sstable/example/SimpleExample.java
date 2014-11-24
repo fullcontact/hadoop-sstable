@@ -1,7 +1,8 @@
 package com.fullcontact.sstable.example;
 
-import com.fullcontact.sstable.hadoop.mapreduce.SSTableInputFormat;
-import com.fullcontact.sstable.hadoop.mapreduce.SSTableRowInputFormat;
+import java.io.IOException;
+import java.net.URISyntaxException;
+
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -18,11 +19,12 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.log4j.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
+import com.fullcontact.sstable.hadoop.mapreduce.SSTableInputFormat;
+import com.fullcontact.sstable.hadoop.mapreduce.SSTableRowInputFormat;
 
 /**
  * A simple example demonstrating a possible MapReduce implementation leveraging the sstable reader.
@@ -30,10 +32,11 @@ import java.net.URISyntaxException;
  * Read sstable data and output as text.
  */
 public class SimpleExample extends Configured implements Tool {
-
+	
     private static final Logger LOG = LoggerFactory.getLogger(SimpleExample.class);
 
     public static void main(String[] args) throws Exception {
+//    	Logger.getRootLogger().setLevel(Level.OFF);
         int res = ToolRunner.run(new Configuration(), new SimpleExample(), args);
         System.exit(res);
     }
