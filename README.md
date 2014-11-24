@@ -1,3 +1,9 @@
+This is a fork of https://github.com/fullcontact/hadoop-sstable with changes to support more recent versions of hadoop.
+
+The following is from the original README.md
+
+------------
+
 # Hadoop SSTable: Splittable Input Format for Reading Cassandra SSTables Directly
 
 Hadoop SSTable is an InputFormat implementation that supports reading and splitting Cassandra SSTables. Leveraging this input format MapReduce jobs can make use of Cassandra data for offline data analysis.
