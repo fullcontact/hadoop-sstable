@@ -2,14 +2,16 @@ ext.githubProjectName = 'hadoop-sstable'
 
 apply from: file('gradle/convention.gradle')
 apply from: file('gradle/maven.gradle')
-//apply from: file('gradle/check.gradle')
 apply from: file('gradle/release.gradle')
 
 buildscript {
     repositories {
-        mavenLocal()
-        mavenCentral()
         jcenter()
+        mavenCentral()
+        //mavenLocal()
+        maven {
+        	url "https://repository.cloudera.com/artifactory/cloudera-repos"
+        }
     }
 
     apply from: file('gradle/buildscript.gradle'), to: buildscript
@@ -19,10 +21,15 @@ allprojects {
     apply plugin: 'idea'
     apply plugin: 'eclipse'
     repositories {
-        mavenLocal()
+        //mavenLocal()
         mavenCentral()
+         maven {
+        	url "https://repository.cloudera.com/artifactory/cloudera-repos"
+        }
     }
 }
+
+
 
 subprojects {
     apply plugin: 'java'
@@ -46,7 +53,7 @@ project(':sstable-core') {
     configurations {
         fatjar
     }
-
+    
     dependencies {
         compile 'org.slf4j:slf4j-api:1.7.5'
 
@@ -54,7 +61,10 @@ project(':sstable-core') {
 
         compile 'org.apache.cassandra:cassandra-all:1.2.15'
 
-        compile 'org.apache.hadoop:hadoop-core:1.0.4'
+//        compile 'org.apache.hadoop:hadoop-core:1.0.4'
+
+		//compile 'org.apache.hadoop:hadoop-client:2.2.0'
+		compile 'org.apache.hadoop:hadoop-client:2.0.0-mr1-cdh4.4.0'
 
         compile 'com.google.guava:guava:16.0.1'
 
@@ -65,7 +75,10 @@ project(':sstable-core') {
         compile 'com.google.code.findbugs:annotations:2.0.3'
 
         fatjar 'com.google.guava:guava:16.0.1'
-        fatjar 'org.apache.hadoop:hadoop-core:1.0.4'
+        fatjar 'net.sf.trove4j:trove4j:3.0.3'
+        fatjar 'it.unimi.dsi:fastutil:6.5.14'
+        //fatjar 'org.apache.hadoop:hadoop-client:2.0.0'
+        fatjar 'org.apache.hadoop:hadoop-client:2.0.0-mr1-cdh4.4.0'
         fatjar 'org.apache.cassandra:cassandra-all:1.2.15'
     }
 
@@ -73,4 +86,3 @@ project(':sstable-core') {
         from { configurations.fatjar.collect { it.isDirectory() ? it : zipTree(it) } }
     }
 }
-
