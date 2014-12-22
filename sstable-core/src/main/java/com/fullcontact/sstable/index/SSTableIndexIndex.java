@@ -36,7 +36,7 @@ import java.util.List;
 public class SSTableIndexIndex {
 
     public static final String SSTABLE_INDEX_SUFFIX = ".Index";
-    private static final String SSTABLE_INDEX_IN_PROGRESS_SUFFIX = ".Index.inprogress";
+    public static final String SSTABLE_INDEX_IN_PROGRESS_SUFFIX = ".Index.inprogress";
 
     private final List<Chunk> chunks = Lists.newArrayList();
 
@@ -105,7 +105,7 @@ public class SSTableIndexIndex {
             final TLongArrayList splitOffsets = new TLongArrayList();
             long currentStart = 0;
             long currentEnd = 0;
-            final IndexOffsetScanner index = new IndexOffsetScanner(sstablePath, fileSystem);
+            final IndexOffsetScanner index = closer.register(new IndexOffsetScanner(sstablePath, fileSystem));
 
             while (index.hasNext()) {
                 // NOTE: This does not give an exact size of this split in bytes but a rough estimate.
