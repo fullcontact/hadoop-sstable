@@ -19,8 +19,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class DistributedSStableIndexIndexer extends Configured implements Tool {
-    private static final Log LOG = LogFactory.getLog(DistributedSStableIndexIndexer.class);
+public class DistributedSSTableIndexIndexer extends Configured implements Tool {
+    private static final Log LOG = LogFactory.getLog(DistributedSSTableIndexIndexer.class);
     private final String INDEX_EXTENSION = "-Index.db";
 
     private final PathFilter nonTemporaryFilter = new PathFilter() {
@@ -87,12 +87,10 @@ public class DistributedSStableIndexIndexer extends Configured implements Tool {
         job.setOutputKeyClass(Path.class);
         job.setOutputValueClass(LongWritablePair.class);
 
-        // The SstableIndexOutputFormat doesn't currently work with speculative execution.
-        // Patches welcome.
         job.getConfiguration().setBoolean(
                 "mapred.map.tasks.speculative.execution", false);
 
-        job.setJarByClass(DistributedSStableIndexIndexer.class);
+        job.setJarByClass(DistributedSSTableIndexIndexer.class);
         job.setInputFormatClass(SSTableSplitInputFormat.class);
         job.setOutputFormatClass(SSTableIndexOutputFormat.class);
         job.setNumReduceTasks(0);
@@ -106,11 +104,11 @@ public class DistributedSStableIndexIndexer extends Configured implements Tool {
     }
 
     public static void main(String[] args) throws Exception {
-        int exitCode = ToolRunner.run(new DistributedSStableIndexIndexer(), args);
+        int exitCode = ToolRunner.run(new DistributedSSTableIndexIndexer(), args);
         System.exit(exitCode);
     }
 
     public static void printUsage() {
-        System.err.println("Usage: hadoop jar /path/to/this/jar com.hadoop.compression.sstable.DistributedSstableIndexer <file.sstable | directory> [file2.sstable directory3 ...]");
+        System.err.println("Usage: hadoop jar /path/to/this/jar com.hadoop.compression.sstable.DistributedSSTableIndexer <file.Index.db | directory> [file2.Index.db directory3 ...]");
     }
 }
