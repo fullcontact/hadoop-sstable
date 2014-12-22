@@ -112,7 +112,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
     }
 
     protected boolean hasMore() {
-        return reader.getFilePointer() < split.getEnd();
+        return reader.getFilePointer() <= split.getEnd();
     }
 
     private static CFMetaData initializeCfMetaData(TaskAttemptContext context) {
