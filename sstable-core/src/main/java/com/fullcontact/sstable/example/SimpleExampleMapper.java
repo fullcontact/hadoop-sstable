@@ -1,9 +1,12 @@
 package com.fullcontact.sstable.example;
 
-import com.google.common.collect.Lists;
+import com.fullcontact.sstable.util.CQLUtil;
+import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.cql3.QueryProcessor;
+import org.apache.cassandra.cql3.statements.CreateColumnFamilyStatement;
+import org.apache.cassandra.db.ColumnFamilyType;
 import org.apache.cassandra.db.marshal.AbstractType;
-import org.apache.cassandra.db.marshal.CompositeType;
-import org.apache.cassandra.db.marshal.UTF8Type;
+import org.apache.cassandra.exceptions.RequestValidationException;
 import org.apache.cassandra.io.sstable.SSTableIdentityIterator;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -20,15 +23,29 @@ import static com.fullcontact.sstable.hadoop.mapreduce.HadoopSSTableConstants.HA
  */
 public class SimpleExampleMapper extends Mapper<ByteBuffer, SSTableIdentityIterator, Text, Text> {
 
-    private final AbstractType keyType =
-            CompositeType.getInstance(Lists.<AbstractType<?>>newArrayList(UTF8Type.instance, UTF8Type.instance));
+    private AbstractType keyType = null;
 
     private JsonColumnParser jsonColumnParser;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
-        this.jsonColumnParser = new JsonColumnParser(context.getConfiguration().get(HADOOP_SSTABLE_CQL));
+
+        String cql = context.getConfiguration().get(HADOOP_SSTABLE_CQL);
+
+        if (cql == null || cql.trim().isEmpty()) {
+            throw new RuntimeException("Failed CQL create statement empty");
+        }
+
+        try {
+            final CFMetaData cfm = CQLUtil.parseCreateStatement(cql);
+
+            keyType = cfm.getKeyValidator();
+            this.jsonColumnParser = new JsonColumnParser(cfm);
+        } catch (RequestValidationException e) {
+            throw new RuntimeException("Failed to parse CQL statement: " + cql, e);
+        }
+
     }
 
     @Override
