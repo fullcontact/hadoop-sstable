@@ -43,9 +43,9 @@ subprojects {
 }
 
 project(':sstable-core') {
-    configurations {
-        fatjar
-    }
+//    configurations {
+//        fatjar
+//    }
 
     dependencies {
         compile 'org.slf4j:slf4j-api:1.7.5'
@@ -64,13 +64,13 @@ project(':sstable-core') {
 
         compile 'com.google.code.findbugs:annotations:2.0.3'
 
-        fatjar 'com.google.guava:guava:16.0.1'
-        fatjar 'org.apache.hadoop:hadoop-core:1.0.4'
-        fatjar 'org.apache.cassandra:cassandra-all:1.2.15'
+//        fatjar 'com.google.guava:guava:16.0.1'
+//        fatjar 'org.apache.hadoop:hadoop-core:1.0.4'
+//        fatjar 'org.apache.cassandra:cassandra-all:1.2.15'
     }
 
-    jar {
-        from { configurations.fatjar.collect { it.isDirectory() ? it : zipTree(it) } }
-    }
+//    jar {
+//        from { configurations.fatjar.collect { it.isDirectory() ? it : zipTree(it) } }
+//    }
 }
 
