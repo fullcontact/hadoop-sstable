@@ -25,6 +25,7 @@ import com.google.common.primitives.Longs;
 
 import org.apache.cassandra.io.compress.CompressionParameters;
 import org.apache.cassandra.io.compress.ICompressor;
+import org.apache.hadoop.fs.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,14 +66,16 @@ public class CompressionMetadata
      *
      * @return metadata about given compressed file.
      */
-    public static CompressionMetadata create(String dataFilePath)
+    public static CompressionMetadata create(String dataFilePath, FileSystem fs)
     {
         Descriptor desc = Descriptor.fromFilename(dataFilePath);
-        return new CompressionMetadata(desc.filenameFor(Component.COMPRESSION_INFO), new File(dataFilePath).length(), desc.version.hasPostCompressionAdlerChecksums);
+        return new CompressionMetadata(desc.filenameFor(Component.COMPRESSION_INFO),
+            new File(dataFilePath).length(), desc.version.hasPostCompressionAdlerChecksums, fs);
     }
 
     @VisibleForTesting
-    CompressionMetadata(String indexFilePath, long compressedLength, boolean hasPostCompressionAdlerChecksums)
+    CompressionMetadata(String indexFilePath, long compressedLength,
+                        boolean  hasPostCompressionAdlerChecksums, FileSystem fs)
     {
         this.indexFilePath = indexFilePath;
         this.hasPostCompressionAdlerChecksums = hasPostCompressionAdlerChecksums;
@@ -80,12 +83,16 @@ public class CompressionMetadata
         DataInputStream stream;
         try
         {
-            stream = new DataInputStream(new FileInputStream(indexFilePath));
+            stream = fs.open(new Path(indexFilePath));
         }
         catch (FileNotFoundException e)
         {
             throw new RuntimeException(e);
         }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
 
         try
         {
