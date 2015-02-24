@@ -19,19 +19,29 @@ package com.fullcontact.cassandra.io.util;
 
 import com.fullcontact.cassandra.io.compress.CompressedRandomAccessReader;
 import com.fullcontact.cassandra.io.compress.CompressionMetadata;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 
 public class CompressedPoolingSegmentedFile extends PoolingSegmentedFile implements ICompressedFile
 {
     public final CompressionMetadata metadata;
+    private final FileSystem fs;
 
-    public CompressedPoolingSegmentedFile(String path, CompressionMetadata metadata)
+    public CompressedPoolingSegmentedFile(String path, CompressionMetadata metadata, FileSystem fs)
     {
         super(path, metadata.dataLength, metadata.compressedFileLength);
         this.metadata = metadata;
+        this.fs = fs;
     }
 
     public static class Builder extends SegmentedFile.Builder
     {
+        private final FileSystem fs;
+
+        public Builder(FileSystem fs) {
+            this.fs = fs;
+        }
+
         public void addPotentialBoundary(long boundary)
         {
             // only one segment in a standard-io file
@@ -39,13 +49,13 @@ public class CompressedPoolingSegmentedFile extends PoolingSegmentedFile impleme
 
         public SegmentedFile complete(String path)
         {
-            return new CompressedPoolingSegmentedFile(path, CompressionMetadata.create(path));
+            return new CompressedPoolingSegmentedFile(path, CompressionMetadata.create(path, fs), fs);
         }
     }
 
     protected RandomAccessReader createReader(String path)
     {
-        return CompressedRandomAccessReader.open(path, metadata, this);
+        return CompressedRandomAccessReader.open(new Path(path), metadata, this, fs);
     }
 
     public CompressionMetadata getMetadata()
