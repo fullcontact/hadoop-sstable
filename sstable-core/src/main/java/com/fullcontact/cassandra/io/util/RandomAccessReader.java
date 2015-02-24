@@ -17,18 +17,21 @@
  */
 package com.fullcontact.cassandra.io.util;
 
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-
 import com.google.common.annotations.VisibleForTesting;
 
 import org.apache.cassandra.io.FSReadError;
 import org.apache.cassandra.io.util.FileDataInput;
 import org.apache.cassandra.io.util.FileMark;
 import org.apache.cassandra.io.util.SequentialWriter;
+import org.apache.hadoop.fs.*;
 
-public class RandomAccessReader extends RandomAccessFile implements FileDataInput
+import java.io.DataInputStream;
+import java.io.EOFException;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+public class RandomAccessReader implements FileDataInput
 {
     public static final long CACHE_FLUSH_INTERVAL_IN_BYTES = (long) Math.pow(2, 27); // 128mb
 
@@ -37,6 +40,9 @@ public class RandomAccessReader extends RandomAccessFile implements FileDataInpu
 
     // absolute filesystem path to the file
     private final String filePath;
+    protected final FSDataInputStream input;
+    private final Path inputPath;
+    private final FileStatus inputFileStatus;
 
     // buffer which will cache file blocks
     protected byte[] buffer;
@@ -49,21 +55,32 @@ public class RandomAccessReader extends RandomAccessFile implements FileDataInpu
     //  this will be LESS than buffer capacity if buffer is not full!
     protected int validBufferBytes = 0;
 
-    // channel liked with the file, used to retrieve data and force updates.
-    protected final FileChannel channel;
-
     private final long fileLength;
 
     protected final PoolingSegmentedFile owner;
 
-    protected RandomAccessReader(File file, int bufferSize, PoolingSegmentedFile owner) throws FileNotFoundException
+    private final FileSystem fs;
+
+    protected RandomAccessReader(Path file, int bufferSize, PoolingSegmentedFile owner, FileSystem fs) throws FileNotFoundException
     {
-        super(file, "r");
+        inputPath = file;
+        try {
+            inputFileStatus = fs.getFileStatus(inputPath);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        this.fs = fs;
+
+        try {
+            this.input = fs.open(file);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         this.owner = owner;
 
-        channel = super.getChannel();
-        filePath = file.getAbsolutePath();
+        filePath = file.toString();
 
         // allocating required size of the buffer
         if (bufferSize <= 0)
@@ -74,7 +91,7 @@ public class RandomAccessReader extends RandomAccessFile implements FileDataInpu
         // we can cache file length in read-only mode
         try
         {
-            fileLength = channel.size();
+            fileLength = fs.getFileStatus(file).getLen();
         }
         catch (IOException e)
         {
@@ -83,22 +100,22 @@ public class RandomAccessReader extends RandomAccessFile implements FileDataInpu
         validBufferBytes = -1; // that will trigger reBuffer() on demand by read/seek operations
     }
 
-    public static RandomAccessReader open(File file, PoolingSegmentedFile owner)
+    public static RandomAccessReader open(Path file, PoolingSegmentedFile owner, FileSystem fs)
     {
-        return open(file, DEFAULT_BUFFER_SIZE, owner);
+        return open(file, DEFAULT_BUFFER_SIZE, owner, fs);
     }
 
-    public static RandomAccessReader open(File file)
+    public static RandomAccessReader open(Path file, FileSystem fs)
     {
-        return open(file, DEFAULT_BUFFER_SIZE, null);
+        return open(file, DEFAULT_BUFFER_SIZE, null, fs);
     }
 
     @VisibleForTesting
-    static RandomAccessReader open(File file, int bufferSize, PoolingSegmentedFile owner)
+    static RandomAccessReader open(Path file, int bufferSize, PoolingSegmentedFile owner, FileSystem fs)
     {
         try
         {
-            return new RandomAccessReader(file, bufferSize, owner);
+            return new RandomAccessReader(file, bufferSize, owner, fs);
         }
         catch (FileNotFoundException e)
         {
@@ -107,9 +124,9 @@ public class RandomAccessReader extends RandomAccessFile implements FileDataInpu
     }
 
     @VisibleForTesting
-    static RandomAccessReader open(SequentialWriter writer)
+    static RandomAccessReader open(SequentialWriter writer, FileSystem fs)
     {
-        return open(new File(writer.getPath()), DEFAULT_BUFFER_SIZE, null);
+        return open(new Path(writer.getPath()), DEFAULT_BUFFER_SIZE, null, fs);
     }
 
     /**
@@ -121,16 +138,16 @@ public class RandomAccessReader extends RandomAccessFile implements FileDataInpu
 
         try
         {
-            if (bufferOffset >= channel.size())
+            if (bufferOffset >= fs.getFileStatus(inputPath).getLen()) // TODO: is this equivalent?
                 return;
 
-            channel.position(bufferOffset); // setting channel position
+            input.seek(bufferOffset); // setting channel position
 
             int read = 0;
 
             while (read < buffer.length)
             {
-                int n = super.read(buffer, read, buffer.length - read);
+                int n = input.read(buffer, read, buffer.length - read);
                 if (n < 0)
                     break;
                 read += n;
@@ -243,7 +260,7 @@ public class RandomAccessReader extends RandomAccessFile implements FileDataInpu
 
         try
         {
-            super.close();
+            input.close();
         }
         catch (IOException e)
         {
@@ -255,6 +272,156 @@ public class RandomAccessReader extends RandomAccessFile implements FileDataInpu
     public String toString()
     {
         return getClass().getSimpleName() + "(" + "filePath='" + filePath + "')";
+    }
+
+    @Override
+    public void readFully(byte[] b) throws IOException {
+        readFully(b, 0, b.length);
+    }
+
+    @Override
+    public void readFully(byte[] b, int off, int len) throws IOException {
+        int n = 0;
+        do {
+            int count = this.read(b, off + n, len - n);
+            if (count < 0)
+                throw new EOFException();
+            n += count;
+        } while (n < len);
+    }
+
+    @Override
+    public int skipBytes(int n) throws IOException {
+        long pos;
+        long len;
+        long newpos;
+
+        if (n <= 0) {
+            return 0;
+        }
+        pos = getFilePointer();
+        len = length();
+        newpos = pos + n;
+        if (newpos > len) {
+            newpos = len;
+        }
+        seek(newpos);
+
+        /* return the actual number of bytes skipped */
+        return (int) (newpos - pos);
+    }
+
+    @Override
+    public boolean readBoolean() throws IOException {
+        int ch = this.read();
+        if (ch < 0)
+            throw new EOFException();
+        return (ch != 0);
+    }
+
+    @Override
+    public byte readByte() throws IOException {
+        int ch = this.read();
+        if (ch < 0)
+            throw new EOFException();
+        return (byte) (ch);
+    }
+
+    @Override
+    public int readUnsignedByte() throws IOException {
+        int ch = this.read();
+        if (ch < 0)
+            throw new EOFException();
+        return ch;
+    }
+
+    @Override
+    public short readShort() throws IOException {
+        int ch1 = this.read();
+        int ch2 = this.read();
+        if ((ch1 | ch2) < 0)
+            throw new EOFException();
+        return (short) ((ch1 << 8) + (ch2 << 0));
+    }
+
+    @Override
+    public int readUnsignedShort() throws IOException {
+        int ch1 = this.read();
+        int ch2 = this.read();
+        if ((ch1 | ch2) < 0)
+            throw new EOFException();
+        return (ch1 << 8) + (ch2 << 0);
+    }
+
+    @Override
+    public char readChar() throws IOException {
+        int ch1 = this.read();
+        int ch2 = this.read();
+        if ((ch1 | ch2) < 0)
+            throw new EOFException();
+        return (char) ((ch1 << 8) + (ch2 << 0));
+    }
+
+    @Override
+    public int readInt() throws IOException {
+        int ch1 = this.read();
+        int ch2 = this.read();
+        int ch3 = this.read();
+        int ch4 = this.read();
+        if ((ch1 | ch2 | ch3 | ch4) < 0)
+            throw new EOFException();
+        return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
+    }
+
+    @Override
+    public long readLong() throws IOException {
+        return ((long) (readInt()) << 32) + (readInt() & 0xFFFFFFFFL);
+    }
+
+    @Override
+    public float readFloat() throws IOException {
+        return Float.intBitsToFloat(readInt());
+    }
+
+    @Override
+    public double readDouble() throws IOException {
+        return Double.longBitsToDouble(readLong());
+    }
+
+    @Override
+    public String readLine() throws IOException {
+        StringBuffer input = new StringBuffer();
+        int c = -1;
+        boolean eol = false;
+
+        while (!eol) {
+            switch (c = read()) {
+                case -1:
+                case '\n':
+                    eol = true;
+                    break;
+                case '\r':
+                    eol = true;
+                    long cur = getFilePointer();
+                    if ((read()) != '\n') {
+                        seek(cur);
+                    }
+                    break;
+                default:
+                    input.append((char) c);
+                    break;
+            }
+        }
+
+        if ((c == -1) && (input.length() == 0)) {
+            return null;
+        }
+        return input.toString();
+    }
+
+    @Override
+    public String readUTF() throws IOException {
+        return DataInputStream.readUTF(this);
     }
 
     /**
@@ -286,7 +453,6 @@ public class RandomAccessReader extends RandomAccessFile implements FileDataInpu
             reBuffer();
     }
 
-    @Override
     // -1 will be returned if there is nothing to read; higher-level methods like readInt
     // or readFully (from RandomAccessFile) will throw EOFException but this should not
     public int read()
@@ -305,13 +471,11 @@ public class RandomAccessReader extends RandomAccessFile implements FileDataInpu
         return ((int) buffer[(int) (current++ - bufferOffset)]) & 0xff;
     }
 
-    @Override
     public int read(byte[] buffer)
     {
         return read(buffer, 0, buffer.length);
     }
 
-    @Override
     // -1 will be returned if there is nothing to read; higher-level methods like readInt
     // or readFully (from RandomAccessFile) will throw EOFException but this should not
     public int read(byte[] buff, int offset, int length)
@@ -365,25 +529,21 @@ public class RandomAccessReader extends RandomAccessFile implements FileDataInpu
         return ByteBuffer.wrap(buff);
     }
 
-    @Override
     public long length()
     {
         return fileLength;
     }
 
-    @Override
     public void write(int value)
     {
         throw new UnsupportedOperationException();
     }
 
-    @Override
     public void write(byte[] buffer)
     {
         throw new UnsupportedOperationException();
     }
 
-    @Override
     public void write(byte[] buffer, int offset, int length)
     {
         throw new UnsupportedOperationException();
