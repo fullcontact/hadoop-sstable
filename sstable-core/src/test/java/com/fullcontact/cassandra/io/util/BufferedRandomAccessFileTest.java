@@ -21,6 +21,7 @@ package com.fullcontact.cassandra.io.util;
 
 import org.apache.cassandra.io.util.FileMark;
 import org.apache.cassandra.io.util.SequentialWriter;
+import org.apache.cassandra.service.FileCacheService;
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -37,7 +38,13 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.fullcontact.cassandra.Util.expectEOF;
+import static com.fullcontact.cassandra.Util.expectException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -46,6 +53,20 @@ import static org.junit.Assert.assertTrue;
  */
 public class BufferedRandomAccessFileTest
 {
+    private static FileSystem fs;
+
+    @BeforeClass
+    public static void setUp() throws IOException {
+        fs = FileSystem.getLocal(new Configuration());
+    }
+
+    @AfterClass
+    public static void tearDown() throws IOException {
+        if (fs != null) {
+            fs.close();
+        }
+    }
+
     @Test
     public void testReadAndWrite() throws Exception
     {
@@ -60,7 +81,7 @@ public class BufferedRandomAccessFileTest
         w.sync();
 
         // reading small amount of data from file, this is handled by initial buffer
-        RandomAccessReader r = RandomAccessReader.open(w);
+        RandomAccessReader r = RandomAccessReader.open(w, fs);
 
         byte[] buffer = new byte[data.length];
         assertEquals(data.length, r.read(buffer));
@@ -83,7 +104,7 @@ public class BufferedRandomAccessFileTest
 
         w.sync();
 
-        r = RandomAccessReader.open(w); // re-opening file in read-only mode
+        r = RandomAccessReader.open(w, fs); // re-opening file in read-only mode
 
         // reading written buffer
         r.seek(initialPosition); // back to initial (before write) position
@@ -144,7 +165,7 @@ public class BufferedRandomAccessFileTest
         byte[] in = generateByteArray(RandomAccessReader.DEFAULT_BUFFER_SIZE);
         w.write(in);
 
-        RandomAccessReader r = RandomAccessReader.open(w);
+        RandomAccessReader r = RandomAccessReader.open(w, fs);
 
         // Read it into a same size array.
         byte[] out = new byte[RandomAccessReader.DEFAULT_BUFFER_SIZE];
@@ -183,7 +204,7 @@ public class BufferedRandomAccessFileTest
         w.close();
 
         // will use cachedlength
-        RandomAccessReader r = RandomAccessReader.open(tmpFile);
+        RandomAccessReader r = RandomAccessReader.open(new Path(tmpFile.getPath()), fs);
         assertEquals(lessThenBuffer.length + biggerThenBuffer.length, r.length());
         r.close();
     }
@@ -203,7 +224,7 @@ public class BufferedRandomAccessFileTest
         w.write(data);
         w.sync();
 
-        final RandomAccessReader r = RandomAccessReader.open(w);
+        final RandomAccessReader r = RandomAccessReader.open(w, fs);
 
         ByteBuffer content = r.readBytes((int) r.length());
 
@@ -237,7 +258,7 @@ public class BufferedRandomAccessFileTest
         w.write(data);
         w.close();
 
-        final RandomAccessReader file = RandomAccessReader.open(w);
+        final RandomAccessReader file = RandomAccessReader.open(w, fs);
 
         file.seek(0);
         assertEquals(file.getFilePointer(), 0);
@@ -276,7 +297,7 @@ public class BufferedRandomAccessFileTest
         w.write(generateByteArray(RandomAccessReader.DEFAULT_BUFFER_SIZE * 2));
         w.close();
 
-        RandomAccessReader file = RandomAccessReader.open(w);
+        RandomAccessReader file = RandomAccessReader.open(w, fs);
 
         file.seek(0); // back to the beginning of the file
         assertEquals(file.skipBytes(10), 10);
@@ -310,7 +331,7 @@ public class BufferedRandomAccessFileTest
 
         w.sync();
 
-        RandomAccessReader r = RandomAccessReader.open(w);
+        RandomAccessReader r = RandomAccessReader.open(w, fs);
 
         // position should change after skip bytes
         r.seek(0);
@@ -345,7 +366,7 @@ public class BufferedRandomAccessFileTest
             for (final int offset : Arrays.asList(0, 8))
             {
                 File file1 = writeTemporaryFile(new byte[16]);
-                final RandomAccessReader file = RandomAccessReader.open(file1, bufferSize, null);
+                final RandomAccessReader file = RandomAccessReader.open(new Path(file1.getPath()), bufferSize, null, fs);
                 expectEOF(new Callable<Object>()
                 {
                     public Object call() throws IOException
@@ -360,7 +381,7 @@ public class BufferedRandomAccessFileTest
             for (final int n : Arrays.asList(1, 2, 4, 8))
             {
                 File file1 = writeTemporaryFile(new byte[16]);
-                final RandomAccessReader file = RandomAccessReader.open(file1, bufferSize, null);
+                final RandomAccessReader file = RandomAccessReader.open(new Path(file1.getPath()), bufferSize, null, fs);
                 expectEOF(new Callable<Object>()
                 {
                     public Object call() throws IOException
@@ -376,7 +397,7 @@ public class BufferedRandomAccessFileTest
     @Test
     public void testNotEOF() throws IOException
     {
-        assertEquals(1, RandomAccessReader.open(writeTemporaryFile(new byte[1])).read(new byte[2]));
+        assertEquals(1, RandomAccessReader.open(new Path(writeTemporaryFile(new byte[1]).getPath()), fs).read(new byte[2]));
     }
 
     @Test
@@ -390,7 +411,7 @@ public class BufferedRandomAccessFileTest
 
         w.sync();
 
-        RandomAccessReader r = RandomAccessReader.open(w);
+        RandomAccessReader r = RandomAccessReader.open(w, fs);
 
         assertEquals(r.bytesRemaining(), toWrite);
 
@@ -415,7 +436,7 @@ public class BufferedRandomAccessFileTest
         tmpFile.deleteOnExit();
 
         // Create the BRAF by filename instead of by file.
-        final RandomAccessReader r = RandomAccessReader.open(new File(tmpFile.getPath()));
+        final RandomAccessReader r = RandomAccessReader.open(new Path(tmpFile.getPath()), fs);
         assert tmpFile.getPath().equals(r.getPath());
 
         // Create a mark and move the rw there.
@@ -436,7 +457,7 @@ public class BufferedRandomAccessFileTest
         w.write(data);
         w.close(); // will flush
 
-        final RandomAccessReader r = RandomAccessReader.open(new File(w.getPath()));
+        final RandomAccessReader r = RandomAccessReader.open(new Path(w.getPath()), fs);
 
         r.close(); // closing to test read after close
 
@@ -457,7 +478,7 @@ public class BufferedRandomAccessFileTest
             }
         }, ClosedChannelException.class);
 
-        RandomAccessReader copy = RandomAccessReader.open(new File(r.getPath()));
+        RandomAccessReader copy = RandomAccessReader.open(new Path(r.getPath()), fs);
         ByteBuffer contents = copy.readBytes((int) copy.length());
 
         assertEquals(contents.limit(), data.length);
@@ -472,7 +493,7 @@ public class BufferedRandomAccessFileTest
 
         w.close();
 
-        RandomAccessReader file = RandomAccessReader.open(w);
+        RandomAccessReader file = RandomAccessReader.open(w, fs);
 
         file.seek(10);
         FileMark mark = file.mark();
@@ -506,76 +527,12 @@ public class BufferedRandomAccessFileTest
         w.write(new byte[30]);
         w.close();
 
-        RandomAccessReader r = RandomAccessReader.open(w);
+        RandomAccessReader r = RandomAccessReader.open(w, fs);
         r.seek(10);
         r.mark();
 
         r.seek(0);
         r.bytesPastMark();
-    }
-
-    @Test
-    public void testFileCacheService() throws IOException, InterruptedException
-    {
-        //see https://issues.apache.org/jira/browse/CASSANDRA-7756
-
-        final int THREAD_COUNT = 40;
-        ExecutorService executorService = Executors.newFixedThreadPool(THREAD_COUNT);
-
-        SequentialWriter w1 = createTempFile("fscache1");
-        SequentialWriter w2 = createTempFile("fscache2");
-
-        w1.write(new byte[30]);
-        w1.close();
-
-        w2.write(new byte[30]);
-        w2.close();
-
-        for (int i = 0; i < 20; i++)
-        {
-
-
-            RandomAccessReader r1 = RandomAccessReader.open(w1);
-            RandomAccessReader r2 = RandomAccessReader.open(w2);
-
-
-            FileCacheService.instance.put(r1);
-            FileCacheService.instance.put(r2);
-
-            final CountDownLatch finished = new CountDownLatch(THREAD_COUNT);
-            final AtomicBoolean hadError = new AtomicBoolean(false);
-
-            for (int k = 0; k < THREAD_COUNT; k++)
-            {
-                executorService.execute( new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-                            long size = FileCacheService.instance.sizeInBytes();
-
-                            while (size > 0)
-                                size = FileCacheService.instance.sizeInBytes();
-                        }
-                        catch (Throwable t)
-                        {
-                            t.printStackTrace();
-                            hadError.set(true);
-                        }
-                        finally
-                        {
-                            finished.countDown();
-                        }
-                    }
-                });
-
-            }
-
-            finished.await();
-            assert !hadError.get();
-        }
     }
 
     @Test
@@ -591,7 +548,7 @@ public class BufferedRandomAccessFileTest
         file.sync(); // flushing file to the disk
 
         // read-only copy of the file, with fixed file length
-        final RandomAccessReader copy = RandomAccessReader.open(new File(file.getPath()));
+        final RandomAccessReader copy = RandomAccessReader.open(new Path(file.getPath()), fs);
 
         copy.seek(copy.length());
         assertTrue(copy.bytesRemaining() == 0 && copy.isEOF());
@@ -674,14 +631,6 @@ public class BufferedRandomAccessFileTest
         File tmpFile = File.createTempFile("set_negative_length", "bin");
         SequentialWriter file = SequentialWriter.open(tmpFile);
         file.truncate(-8L);
-    }
-
-    @Test (expected=IOException.class)
-    public void testSetLengthDuringReadMode() throws IOException
-    {
-        File tmpFile = File.createTempFile("set_length_during_read_mode", "bin");
-        RandomAccessReader file = RandomAccessReader.open(tmpFile);
-        file.setLength(4L);
     }
 
     private SequentialWriter createTempFile(String name) throws IOException
