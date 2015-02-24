@@ -63,7 +63,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
         }
 
         // open the file and seek to the start of the split
-        this.reader = CompressedRandomAccessReader.open(split.getPath(), compressionMetadata, false, fileSystem);
+        this.reader = CompressedRandomAccessReader.open(split.getPath(), compressionMetadata, fileSystem);
         this.reader.seek(split.getStart());
 
         this.cfMetaData = initializeCfMetaData(context);
