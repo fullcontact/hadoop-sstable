@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.cassandra.io.util.FileDataInput;
+import org.apache.cassandra.io.util.MappedFileDataInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

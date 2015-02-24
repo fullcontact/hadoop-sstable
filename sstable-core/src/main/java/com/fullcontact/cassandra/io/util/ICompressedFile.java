@@ -17,7 +17,7 @@
  */
 package com.fullcontact.cassandra.io.util;
 
-import org.apache.cassandra.io.compress.CompressionMetadata;
+import com.fullcontact.cassandra.io.compress.CompressionMetadata;
 
 public interface ICompressedFile
 {
