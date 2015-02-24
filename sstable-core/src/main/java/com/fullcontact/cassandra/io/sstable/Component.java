@@ -17,12 +17,13 @@
  */
 package com.fullcontact.cassandra.io.sstable;
 
-import java.io.File;
 import java.util.EnumSet;
 
 import com.google.common.base.Objects;
 
 import org.apache.cassandra.utils.Pair;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 
 /**
  * SSTables are made up of multiple components in separate files. Components are
@@ -120,7 +121,7 @@ public class Component
      * @return A Descriptor for the SSTable, and a Component for this particular file.
      * TODO move descriptor into Component field
      */
-    public static Pair<Descriptor,Component> fromFilename(File directory, String name)
+    public static Pair<Descriptor,Component> fromFilename(Path directory, String name, FileSystem fs)
     {
         Pair<Descriptor,String> path = Descriptor.fromFilename(directory, name);
 

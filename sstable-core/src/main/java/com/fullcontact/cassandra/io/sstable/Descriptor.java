@@ -23,6 +23,7 @@ import java.util.StringTokenizer;
 import com.google.common.base.Objects;
 
 import org.apache.cassandra.utils.Pair;
+import org.apache.hadoop.fs.Path;
 
 import static com.fullcontact.cassandra.io.sstable.Component.separator;
 
@@ -127,7 +128,7 @@ public class Descriptor
         }
     }
 
-    public final File directory;
+    public final Path directory;
     /** version has the following format: <code>[a-z]+</code> */
     public final Version version;
     public final String ksname;
@@ -139,17 +140,17 @@ public class Descriptor
     /**
      * A descriptor that assumes CURRENT_VERSION.
      */
-    public Descriptor(File directory, String ksname, String cfname, int generation, boolean temp)
+    public Descriptor(Path directory, String ksname, String cfname, int generation, boolean temp)
     {
         this(Version.CURRENT, directory, ksname, cfname, generation, temp);
     }
 
-    public Descriptor(String version, File directory, String ksname, String cfname, int generation, boolean temp)
+    public Descriptor(String version, Path directory, String ksname, String cfname, int generation, boolean temp)
     {
         this(new Version(version), directory, ksname, cfname, generation, temp);
     }
 
-    public Descriptor(Version version, File directory, String ksname, String cfname, int generation, boolean temp)
+    public Descriptor(Version version, Path directory, String ksname, String cfname, int generation, boolean temp)
     {
         assert version != null && directory != null && ksname != null && cfname != null;
         this.version = version;
@@ -194,23 +195,22 @@ public class Descriptor
     }
 
     /**
-     * @see #fromFilename(File directory, String name)
      * @param filename The SSTable filename
      * @return Descriptor of the SSTable initialized from filename
      */
     public static Descriptor fromFilename(String filename)
     {
-        File file = new File(filename);
-        return fromFilename(file.getParentFile(), file.getName(), false).left;
+        Path file = new Path(filename);
+        return fromFilename(file.getParent(), file.getName(), false).left;
     }
 
     public static Descriptor fromFilename(String filename, boolean skipComponent)
     {
-        File file = new File(filename);
-        return fromFilename(file.getParentFile(), file.getName(), skipComponent).left;
+        Path file = new Path(filename);
+        return fromFilename(file.getParent(), file.getName(), skipComponent).left;
     }
 
-    public static Pair<Descriptor,String> fromFilename(File directory, String name)
+    public static Pair<Descriptor,String> fromFilename(Path directory, String name)
     {
         return fromFilename(directory, name, false);
     }
@@ -224,7 +224,8 @@ public class Descriptor
      *
      * @return A Descriptor for the SSTable, and the Component remainder.
      */
-    public static Pair<Descriptor,String> fromFilename(File directory, String name, boolean skipComponent)
+    public static Pair<Descriptor,String> fromFilename(Path directory, String name, boolean
+        skipComponent)
     {
         // tokenize the filename
         StringTokenizer st = new StringTokenizer(name, String.valueOf(separator));
@@ -254,7 +255,7 @@ public class Descriptor
         String component = null;
         if (!skipComponent)
             component = st.nextToken();
-        directory = directory != null ? directory : new File(".");
+        directory = directory != null ? directory : new Path(".");
         return Pair.create(new Descriptor(version, directory, ksname, cfname, generation, temporary), component);
     }
 

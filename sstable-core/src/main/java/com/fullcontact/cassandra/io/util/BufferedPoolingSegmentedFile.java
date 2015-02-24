@@ -17,17 +17,32 @@
 */
 package com.fullcontact.cassandra.io.util;
 
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+
 import java.io.File;
 
+/**
+ * Cassandra BufferedPoolingSegmentedFile ported to work with HDFS.
+ */
 public class BufferedPoolingSegmentedFile extends PoolingSegmentedFile
 {
-    public BufferedPoolingSegmentedFile(String path, long length)
+    private final FileSystem fs;
+
+    public BufferedPoolingSegmentedFile(String path, long length, FileSystem fs)
     {
         super(path, length);
+        this.fs = fs;
     }
 
     public static class Builder extends SegmentedFile.Builder
     {
+        private final FileSystem fs;
+
+        public Builder(FileSystem fs) {
+            this.fs = fs;
+        }
+
         public void addPotentialBoundary(long boundary)
         {
             // only one segment in a standard-io file
@@ -36,12 +51,12 @@ public class BufferedPoolingSegmentedFile extends PoolingSegmentedFile
         public SegmentedFile complete(String path)
         {
             long length = new File(path).length();
-            return new BufferedPoolingSegmentedFile(path, length);
+            return new BufferedPoolingSegmentedFile(path, length, fs);
         }
     }
 
     protected RandomAccessReader createReader(String path)
     {
-        return RandomAccessReader.open(new File(path), this);
+        return RandomAccessReader.open(new Path(path), this, fs);
     }
 }
