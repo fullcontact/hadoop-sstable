@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.cassandra.io.compress;
+package com.fullcontact.cassandra.io.compress;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -23,11 +23,12 @@ import java.util.zip.Adler32;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
+import com.fullcontact.cassandra.io.sstable.CorruptBlockException;
 import org.apache.cassandra.io.FSReadError;
 import org.apache.cassandra.io.sstable.CorruptSSTableException;
-import org.apache.cassandra.io.util.CompressedPoolingSegmentedFile;
-import org.apache.cassandra.io.util.PoolingSegmentedFile;
-import org.apache.cassandra.io.util.RandomAccessReader;
+import com.fullcontact.cassandra.io.util.CompressedPoolingSegmentedFile;
+import com.fullcontact.cassandra.io.util.PoolingSegmentedFile;
+import com.fullcontact.cassandra.io.util.RandomAccessReader;
 import org.apache.cassandra.utils.FBUtilities;
 
 /**

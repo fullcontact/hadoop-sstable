@@ -15,10 +15,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.apache.cassandra.io.util;
+package com.fullcontact.cassandra.io.util;
 
-import org.apache.cassandra.io.compress.CompressedRandomAccessReader;
-import org.apache.cassandra.io.compress.CompressionMetadata;
+import com.fullcontact.cassandra.io.compress.CompressedRandomAccessReader;
+import com.fullcontact.cassandra.io.compress.CompressionMetadata;
 
 public class CompressedPoolingSegmentedFile extends PoolingSegmentedFile implements ICompressedFile
 {

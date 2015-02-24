@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.cassandra.io.util;
+package com.fullcontact.cassandra.io.util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -28,6 +28,7 @@ import java.util.NoSuchElementException;
 import org.apache.cassandra.config.Config;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.io.FSReadError;
+import org.apache.cassandra.io.util.FileDataInput;
 import org.apache.cassandra.utils.Pair;
 
 /**

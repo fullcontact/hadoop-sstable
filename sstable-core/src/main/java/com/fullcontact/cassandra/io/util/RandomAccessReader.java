@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.cassandra.io.util;
+package com.fullcontact.cassandra.io.util;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -24,6 +24,9 @@ import java.nio.channels.FileChannel;
 import com.google.common.annotations.VisibleForTesting;
 
 import org.apache.cassandra.io.FSReadError;
+import org.apache.cassandra.io.util.FileDataInput;
+import org.apache.cassandra.io.util.FileMark;
+import org.apache.cassandra.io.util.SequentialWriter;
 
 public class RandomAccessReader extends RandomAccessFile implements FileDataInput
 {

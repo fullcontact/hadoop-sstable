@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.cassandra.io.sstable;
+package com.fullcontact.cassandra.io.sstable;
 
 import java.io.File;
 import java.util.StringTokenizer;
@@ -24,7 +24,7 @@ import com.google.common.base.Objects;
 
 import org.apache.cassandra.utils.Pair;
 
-import static org.apache.cassandra.io.sstable.Component.separator;
+import static com.fullcontact.cassandra.io.sstable.Component.separator;
 
 /**
  * A SSTable is described by the keyspace and column family it contains data
