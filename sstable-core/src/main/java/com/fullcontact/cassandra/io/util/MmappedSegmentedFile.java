@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.apache.cassandra.io.util.FileDataInput;
 import org.apache.cassandra.io.util.MappedFileDataInput;
+import org.apache.hadoop.fs.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,11 +45,13 @@ public class MmappedSegmentedFile extends SegmentedFile
      * to a RandomAccessFile.
      */
     private final Segment[] segments;
+    private final FileSystem fs;
 
-    public MmappedSegmentedFile(String path, long length, Segment[] segments)
+    public MmappedSegmentedFile(String path, long length, Segment[] segments, FileSystem fs)
     {
         super(path, length);
         this.segments = segments;
+        this.fs = fs;
     }
 
     /**
@@ -80,7 +83,7 @@ public class MmappedSegmentedFile extends SegmentedFile
 
         // not mmap'd: open a braf covering the segment
         // FIXME: brafs are unbounded, so this segment will cover the rest of the file, rather than just the row
-        RandomAccessReader file = RandomAccessReader.open(new File(path));
+        RandomAccessReader file = RandomAccessReader.open(new Path(path), fs);
         file.seek(position);
         return file;
     }
@@ -117,6 +120,7 @@ public class MmappedSegmentedFile extends SegmentedFile
      */
     static class Builder extends SegmentedFile.Builder
     {
+        private final FileSystem fs;
         // planned segment boundaries
         private List<Long> boundaries;
 
@@ -127,9 +131,10 @@ public class MmappedSegmentedFile extends SegmentedFile
         // used to allow merging multiple too-large-to-mmap segments, into a single buffered segment.
         private long currentSize = 0;
 
-        public Builder()
+        public Builder(FileSystem fs)
         {
             super();
+            this.fs = fs;
             boundaries = new ArrayList<Long>();
             boundaries.add(0L);
         }
@@ -167,7 +172,7 @@ public class MmappedSegmentedFile extends SegmentedFile
             if (length != boundaries.get(boundaries.size() - 1))
                 boundaries.add(length);
             // create the segments
-            return new MmappedSegmentedFile(path, length, createSegments(path));
+            return new MmappedSegmentedFile(path, length, createSegments(path), fs);
         }
 
         private Segment[] createSegments(String path)
