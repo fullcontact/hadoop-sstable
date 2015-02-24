@@ -78,8 +78,8 @@ public class JsonColumnParser {
     private void serializeColumns(StringBuilder sb, SSTableIdentityIterator rowIterator, Mapper.Context context) {
         while (rowIterator.hasNext()) {
             OnDiskAtom atom = rowIterator.next();
-            if (atom instanceof IColumn) {
-                IColumn column = (IColumn) atom;
+            if (atom instanceof Column) {
+                Column column = (Column) atom;
                 String cn = getColumnName(column.name(), columnNameConverter);
                 sb.append("[\"");
                 sb.append(cn);
