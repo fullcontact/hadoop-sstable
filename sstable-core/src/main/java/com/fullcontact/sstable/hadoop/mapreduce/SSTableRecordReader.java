@@ -21,7 +21,7 @@ import com.fullcontact.cassandra.io.util.RandomAccessReader;
 import com.google.common.base.Preconditions;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.cql3.QueryProcessor;
-import org.apache.cassandra.cql3.statements.CreateColumnFamilyStatement;
+import org.apache.cassandra.cql3.statements.CreateTableStatement;
 import org.apache.cassandra.db.ColumnFamilyType;
 import org.apache.cassandra.dht.AbstractPartitioner;
 import org.apache.cassandra.dht.RandomPartitioner;
@@ -119,7 +119,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
         final String cql = context.getConfiguration().get(HadoopSSTableConstants.HADOOP_SSTABLE_CQL);
         Preconditions.checkNotNull(cql, "Cannot proceed without CQL definition.");
 
-        final CreateColumnFamilyStatement statement = getCreateColumnFamilyStatement(cql);
+        final CreateTableStatement statement = getCreateTableStatement(cql);
 
         final String keyspace = context.getConfiguration().get(HadoopSSTableConstants.HADOOP_SSTABLE_KEYSPACE, "default");
         final String columnFamily = context.getConfiguration().get(HadoopSSTableConstants.HADOOP_SSTABLE_COLUMN_FAMILY_NAME, "default");
@@ -135,10 +135,10 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
         return cfMetaData;
     }
 
-    private static CreateColumnFamilyStatement getCreateColumnFamilyStatement(String cql) {
-        CreateColumnFamilyStatement statement;
+    private static CreateTableStatement getCreateTableStatement(String cql) {
+        CreateTableStatement statement;
         try {
-            statement = (CreateColumnFamilyStatement) QueryProcessor.parseStatement(cql).prepare().statement;
+            statement = (CreateTableStatement) QueryProcessor.parseStatement(cql).prepare().statement;
         } catch (RequestValidationException e) {
             // Cannot proceed if an error occurs
             throw new RuntimeException("Error configuring SSTable reader. Cannot proceed", e);

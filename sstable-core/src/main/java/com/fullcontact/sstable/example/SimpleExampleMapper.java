@@ -2,9 +2,6 @@ package com.fullcontact.sstable.example;
 
 import com.fullcontact.sstable.util.CQLUtil;
 import org.apache.cassandra.config.CFMetaData;
-import org.apache.cassandra.cql3.QueryProcessor;
-import org.apache.cassandra.cql3.statements.CreateColumnFamilyStatement;
-import org.apache.cassandra.db.ColumnFamilyType;
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.exceptions.RequestValidationException;
 import org.apache.cassandra.io.sstable.SSTableIdentityIterator;
