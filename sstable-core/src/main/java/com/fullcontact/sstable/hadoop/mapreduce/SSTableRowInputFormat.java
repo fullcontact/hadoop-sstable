@@ -16,7 +16,7 @@
 
 package com.fullcontact.sstable.hadoop.mapreduce;
 
-import org.apache.cassandra.io.sstable.SSTableIdentityIterator;
+import com.fullcontact.cassandra.io.sstable.SSTableIdentityIterator;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
