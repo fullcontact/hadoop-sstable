@@ -24,12 +24,13 @@ import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
 import com.fullcontact.cassandra.io.sstable.CorruptBlockException;
+import com.fullcontact.cassandra.io.util.RandomAccessReader;
 import org.apache.cassandra.io.FSReadError;
 import org.apache.cassandra.io.sstable.CorruptSSTableException;
 import com.fullcontact.cassandra.io.util.CompressedPoolingSegmentedFile;
 import com.fullcontact.cassandra.io.util.PoolingSegmentedFile;
-import com.fullcontact.cassandra.io.util.RandomAccessReader;
 import org.apache.cassandra.utils.FBUtilities;
+import org.apache.hadoop.fs.*;
 
 /**
  * CRAR extends RAR to transparently uncompress blocks from the file into RAR.buffer.  Most of the RAR
@@ -37,11 +38,12 @@ import org.apache.cassandra.utils.FBUtilities;
  */
 public class CompressedRandomAccessReader extends RandomAccessReader
 {
-    public static CompressedRandomAccessReader open(String path, CompressionMetadata metadata, CompressedPoolingSegmentedFile owner)
+    public static CompressedRandomAccessReader open(Path path, CompressionMetadata metadata,
+                                                    CompressedPoolingSegmentedFile owner, FileSystem fs)
     {
         try
         {
-            return new CompressedRandomAccessReader(path, metadata, owner);
+            return new CompressedRandomAccessReader(path, metadata, owner, fs);
         }
         catch (FileNotFoundException e)
         {
@@ -49,11 +51,12 @@ public class CompressedRandomAccessReader extends RandomAccessReader
         }
     }
 
-    public static CompressedRandomAccessReader open(String dataFilePath, CompressionMetadata metadata)
+    public static CompressedRandomAccessReader open(Path dataFilePath,
+                                                    CompressionMetadata metadata, FileSystem fs)
     {
         try
         {
-            return new CompressedRandomAccessReader(dataFilePath, metadata, null);
+            return new CompressedRandomAccessReader(dataFilePath, metadata, null, fs);
         }
         catch (FileNotFoundException e)
         {
@@ -72,9 +75,11 @@ public class CompressedRandomAccessReader extends RandomAccessReader
     // raw checksum bytes
     private final ByteBuffer checksumBytes = ByteBuffer.wrap(new byte[4]);
 
-    protected CompressedRandomAccessReader(String dataFilePath, CompressionMetadata metadata, PoolingSegmentedFile owner) throws FileNotFoundException
+    protected CompressedRandomAccessReader(Path dataFilePath, CompressionMetadata metadata,
+                                           PoolingSegmentedFile owner, FileSystem fs) throws
+        FileNotFoundException
     {
-        super(new File(dataFilePath), metadata.chunkLength(), owner);
+        super(dataFilePath, metadata.chunkLength(), owner, fs);
         this.metadata = metadata;
         checksum = metadata.hasPostCompressionAdlerChecksums ? new Adler32() : new CRC32();
         compressed = ByteBuffer.wrap(new byte[metadata.compressor().initialCompressedBufferLength(metadata.chunkLength())]);
