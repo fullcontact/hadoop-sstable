@@ -30,6 +30,7 @@ import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.io.FSReadError;
 import org.apache.cassandra.io.util.FileDataInput;
 import org.apache.cassandra.utils.Pair;
+import org.apache.hadoop.fs.FileSystem;
 
 /**
  * Abstracts a read-only file that has been split into segments, each of which can be represented by an independent
@@ -67,16 +68,16 @@ public abstract class SegmentedFile
     /**
      * @return A SegmentedFile.Builder.
      */
-    public static Builder getBuilder(Config.DiskAccessMode mode)
+    public static Builder getBuilder(Config.DiskAccessMode mode, FileSystem fs)
     {
         return mode == Config.DiskAccessMode.mmap
-               ? new MmappedSegmentedFile.Builder()
-               : new BufferedPoolingSegmentedFile.Builder();
+               ? new MmappedSegmentedFile.Builder(fs)
+               : new BufferedPoolingSegmentedFile.Builder(fs);
     }
 
-    public static Builder getCompressedBuilder()
+    public static Builder getCompressedBuilder(FileSystem fs)
     {
-        return new CompressedPoolingSegmentedFile.Builder();
+        return new CompressedPoolingSegmentedFile.Builder(fs);
     }
 
     public abstract FileDataInput getSegment(long position);
