@@ -52,7 +52,7 @@ project(':sstable-core') {
 
         testCompile "junit:junit:4.11"
 
-        compile 'org.apache.cassandra:cassandra-all:1.2.15'
+        compile 'org.apache.cassandra:cassandra-all:2.0.9'
 
         compile 'org.apache.hadoop:hadoop-core:1.0.4'
 
