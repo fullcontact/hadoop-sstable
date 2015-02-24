@@ -104,8 +104,8 @@ public class CompressedRandomAccessReader extends RandomAccessReader
 
     private void decompressChunk(CompressionMetadata.Chunk chunk) throws IOException
     {
-        if (channel.position() != chunk.offset)
-            channel.position(chunk.offset);
+        if (input.getPos() != chunk.offset)
+            input.seek(chunk.offset);
 
         if (compressed.capacity() < chunk.length)
             compressed = ByteBuffer.wrap(new byte[chunk.length]);
@@ -113,8 +113,12 @@ public class CompressedRandomAccessReader extends RandomAccessReader
             compressed.clear();
         compressed.limit(chunk.length);
 
-        if (channel.read(compressed) != chunk.length)
+        byte[] compressedArray = compressed.array();
+        try {
+            input.readFully(compressedArray, compressed.position(), compressed.limit());
+        } catch (IOException e) {
             throw new CorruptBlockException(getPath(), chunk);
+        }
 
         // technically flip() is unnecessary since all the remaining work uses the raw array, but if that changes
         // in the future this will save a lot of hair-pulling
@@ -128,6 +132,7 @@ public class CompressedRandomAccessReader extends RandomAccessReader
             throw new CorruptBlockException(getPath(), chunk, e);
         }
 
+        // TODO: Circle back and determine why this doesn't work. Maybe it does with the new readFully impl?
         if (metadata.parameters.getCrcCheckChance() > FBUtilities.threadLocalRandom().nextDouble())
         {
 
@@ -153,10 +158,13 @@ public class CompressedRandomAccessReader extends RandomAccessReader
 
     private int checksum(CompressionMetadata.Chunk chunk) throws IOException
     {
-        assert channel.position() == chunk.offset + chunk.length;
+        assert input.getPos() == chunk.offset + chunk.length;
         checksumBytes.clear();
-        if (channel.read(checksumBytes) != checksumBytes.capacity())
+        try {
+            input.readFully(checksumBytes.array());
+        } catch (IOException e) {
             throw new CorruptBlockException(getPath(), chunk);
+        }
         return checksumBytes.getInt(0);
     }
 
