@@ -19,7 +19,6 @@ package com.fullcontact.cassandra.io.util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.util.Iterator;
