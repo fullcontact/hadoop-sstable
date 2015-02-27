@@ -31,6 +31,7 @@ import org.apache.cassandra.io.FSReadError;
 import org.apache.cassandra.io.util.FileDataInput;
 import org.apache.cassandra.utils.Pair;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 
 /**
  * Abstracts a read-only file that has been split into segments, each of which can be represented by an independent
@@ -58,9 +59,16 @@ public abstract class SegmentedFile
         this(path, length, length);
     }
 
+    // TODO: remove this temp debugging method
+    private static void assertAbsolute(Path p) {
+        if (!p.isAbsolute())
+            throw new AssertionError(String.format("Expected path to be absolute but it was not: %s", p));
+    }
+
     protected SegmentedFile(String path, long length, long onDiskLength)
     {
-        this.path = new File(path).getAbsolutePath();
+        assertAbsolute(new Path(path));
+        this.path = path;
         this.length = length;
         this.onDiskLength = onDiskLength;
     }
