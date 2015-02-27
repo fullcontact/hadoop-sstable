@@ -17,7 +17,6 @@
  */
 package com.fullcontact.cassandra.io.sstable;
 
-import java.io.File;
 import java.util.StringTokenizer;
 
 import com.google.common.base.Objects;
@@ -25,6 +24,7 @@ import com.google.common.base.Objects;
 import org.apache.cassandra.utils.Pair;
 import org.apache.hadoop.fs.Path;
 
+import static java.io.File.separatorChar;
 import static com.fullcontact.cassandra.io.sstable.Component.separator;
 
 /**
@@ -175,7 +175,7 @@ public class Descriptor
     public String baseFilename()
     {
         StringBuilder buff = new StringBuilder();
-        buff.append(directory).append(File.separatorChar);
+        buff.append(directory).append(separatorChar);
         buff.append(ksname).append(separator);
         buff.append(cfname).append(separator);
         if (temporary)
