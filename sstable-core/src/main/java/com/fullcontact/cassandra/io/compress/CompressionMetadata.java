@@ -69,8 +69,13 @@ public class CompressionMetadata
     public static CompressionMetadata create(String dataFilePath, FileSystem fs)
     {
         Descriptor desc = Descriptor.fromFilename(dataFilePath);
-        return new CompressionMetadata(desc.filenameFor(Component.COMPRESSION_INFO),
-            new File(dataFilePath).length(), desc.version.hasPostCompressionAdlerChecksums, fs);
+        try {
+            return new CompressionMetadata(desc.filenameFor(Component.COMPRESSION_INFO),
+                fs.getFileStatus(new Path(dataFilePath)).getLen(), desc.version.hasPostCompressionAdlerChecksums, fs);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @VisibleForTesting
