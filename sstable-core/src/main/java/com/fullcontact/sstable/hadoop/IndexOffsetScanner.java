@@ -132,7 +132,7 @@ public class IndexOffsetScanner implements Closeable {
      * @param in DataInput.
      * @throws IOException
      */
-    private void skipPromotedIndex(final DataInput in) throws IOException {
+    public static void skipPromotedIndex(final DataInput in) throws IOException {
         final int size = in.readInt();
         if (size <= 0) {
             return;
