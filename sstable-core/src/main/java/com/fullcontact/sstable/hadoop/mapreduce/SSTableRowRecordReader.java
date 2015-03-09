@@ -44,8 +44,7 @@ public class SSTableRowRecordReader extends SSTableRecordReader<ByteBuffer, SSTa
         setCurrentKey(keyBytes);
 
         // Read the data size.
-        // TODO: may have to take into account the fact that files can support long or int depending on Cassandra version.
-        final long dataSize = getReader().readLong();
+        final long dataSize = getDataSize();
 
         // Read the value and set it.
         final SSTableIdentityIterator ssTableIdentityIterator = getIdentityIterator(keyBytes, dataSize);

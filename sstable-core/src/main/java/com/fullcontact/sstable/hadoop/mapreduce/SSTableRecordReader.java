@@ -89,10 +89,10 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
 
     @Override
     public float getProgress() throws IOException, InterruptedException {
-        if (split.getSize() == 0) {
+        if (split.getIndexSize() == 0) {
             return 0.0f;
         } else {
-            return Math.min(1.0f, (reader.getFilePointer() - split.getStart()) / (float) (split.getSize()));
+            return Math.min(1.0f, (reader.getFilePointer() - split.getStart()) / (float) (split.getIndexSize()));
         }
     }
 
@@ -101,6 +101,10 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
         if (reader != null) {
             reader.close();
         }
+    }
+
+    protected long getDataSize() throws IOException {
+        return split.getDataSize();
     }
 
     protected RandomAccessReader getReader() {

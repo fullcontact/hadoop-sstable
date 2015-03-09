@@ -155,7 +155,7 @@ public abstract class SSTableInputFormat<K, V> extends FileInputFormat<K, V> {
                 // This isn't likely to work well because we are dealing with the index into uncompressed data...
                 final int blockIndex = getBlockIndex(blockLocations, chunk.getStart() / COMPRESSION_RATIO_ASSUMPTION);
                 final SSTableSplit split = new SSTableSplit(dataFile, chunk.getStart(), chunk.getEnd(),
-                        chunk.getEnd() - chunk.getStart(), blockLocations[blockIndex].getHosts());
+                        chunk.getEnd() - chunk.getStart(), blockLocations[blockIndex].getHosts(), fileSystem);
                 result.add(split);
             }
         }
