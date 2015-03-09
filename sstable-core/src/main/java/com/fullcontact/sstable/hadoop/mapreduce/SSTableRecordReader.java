@@ -111,7 +111,14 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
     }
 
     protected long getDataSize() throws IOException {
-        return split.getDataSize();
+        final long dataSize = split.getDataSize();
+        long result = 0;
+        if (dataSize == -1) { // handle EOF
+            result = reader.length() - reader.getFilePointer();
+        } else {
+            result = dataSize;
+        }
+        return result;
     }
 
     protected RandomAccessReader getReader() {

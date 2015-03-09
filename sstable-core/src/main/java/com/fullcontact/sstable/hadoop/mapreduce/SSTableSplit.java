@@ -159,16 +159,25 @@ public class SSTableSplit extends InputSplit implements Writable {
     // warning - STATEFUL
     // TODO move some of this to IndexOffsetScanner
     public long getDataSize() throws IOException {
-        ByteBufferUtil.readWithShortLength(indexReader);
-        long dataStart = indexReader.readLong();
-        IndexOffsetScanner.skipPromotedIndex(indexReader);
-        long savePos = indexReader.getPos();
-        ByteBufferUtil.readWithShortLength(indexReader);
-        long dataEnd = indexReader.readLong();
-        IndexOffsetScanner.skipPromotedIndex(indexReader);
+        long rowStart = 0;
+        if (indexReader.available() != 0) {
+            ByteBufferUtil.readWithShortLength(indexReader);
+            rowStart = indexReader.readLong();
+            IndexOffsetScanner.skipPromotedIndex(indexReader);
+        }
 
-        indexReader.seek(savePos);
-        return dataEnd - dataStart;
+        long rowEnd;
+        if (indexReader.available() != 0) {
+            long savePos = indexReader.getPos();
+            ByteBufferUtil.readWithShortLength(indexReader);
+            rowEnd = indexReader.readLong();
+            IndexOffsetScanner.skipPromotedIndex(indexReader);
+            indexReader.seek(savePos);
+        } else {
+            return -1;
+        }
+
+        return rowEnd - rowStart;
     }
 
     /**
