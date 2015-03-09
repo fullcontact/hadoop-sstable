@@ -65,7 +65,7 @@ public class SSTableSplitRecordReader extends RecordReader<Path, LongWritablePai
                 // NOTE: This does not give an exact size of this split in bytes but a rough estimate.
                 // This should be good enough since it's only used for sorting splits by size in hadoop land.
                 while (currentEnd - currentStart < splitSize && index.hasNext()) {
-                    currentEnd = index.next();
+                    currentEnd = index.next().idxOffset;
                     splitOffsets.add(currentEnd);
                 }
 
@@ -79,7 +79,7 @@ public class SSTableSplitRecordReader extends RecordReader<Path, LongWritablePai
                 splitOffsets.clear();
 
                 if (index.hasNext()) {
-                    currentStart = index.next();
+                    currentStart = index.next().idxOffset;
                     currentEnd = currentStart;
                     splitOffsets.add(currentStart);
                 }

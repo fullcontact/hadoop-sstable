@@ -17,43 +17,25 @@ package com.fullcontact.sstable.hadoop;
 
 import com.fullcontact.cassandra.io.util.FileUtils;
 import com.google.common.io.Closer;
-import it.unimi.dsi.fastutil.io.FastBufferedInputStream;
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.DataInput;
-import java.io.DataInputStream;
-import java.io.FileInputStream;
 import java.io.IOError;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Index scanner reads offsets from an SSTable index.
  */
 public class IndexOffsetScanner implements Closeable {
 
-    private final DataInput input;
+    private final FSDataInputStream input;
     private final Closer closer;
 
-    /**
-     * Hadoop fs based version.
-     *
-     * @param filename File name.
-     * @param fileSystem File system.
-     */
-    public IndexOffsetScanner(final String filename, final FileSystem fileSystem) {
-        closer = Closer.create();
-        try {
-            final FSDataInputStream inputStream = fileSystem.open(new Path(filename));
-            this.input = closer.register(new DataInputStream(new FastBufferedInputStream(inputStream)));
-        } catch (IOException e) {
-            throw new IOError(e);
-        }
-    }
 
     /**
      * Hadoop fs based version.
@@ -64,22 +46,9 @@ public class IndexOffsetScanner implements Closeable {
     public IndexOffsetScanner(final Path path, final FileSystem fileSystem) {
         closer = Closer.create();
         try {
+            // TODO: this used to wrap w/ some buffering — see if that's still needed
             final FSDataInputStream inputStream = fileSystem.open(path);
-            this.input = closer.register(new DataInputStream(new FastBufferedInputStream(inputStream)));
-        } catch (IOException e) {
-            throw new IOError(e);
-        }
-    }
-
-    /**
-     * Java I/O based version.
-     *
-     * @param filename File name.
-     */
-    public IndexOffsetScanner(final String filename) {
-        closer = Closer.create();
-        try {
-            this.input = closer.register(new DataInputStream(new BufferedInputStream(new FileInputStream(filename), 65536 * 10)));
+            this.input = closer.register(inputStream);
         } catch (IOException e) {
             throw new IOError(e);
         }
@@ -102,7 +71,7 @@ public class IndexOffsetScanner implements Closeable {
      */
     public boolean hasNext() {
         try {
-            return ((DataInputStream) input).available() != 0;
+            return input.available() != 0;
         } catch (IOException e) {
             throw new IOError(e);
         }
@@ -112,16 +81,9 @@ public class IndexOffsetScanner implements Closeable {
      * Get the next offset from the SSTable index.
      * @return SSTable offset.
      */
-    public long next() {
+    public IndexEntry next() {
         try {
-            ByteBufferUtil.readWithShortLength(input);
-
-            final long offset = input.readLong();
-
-            // TODO: Because this is version ic > ia promotedIndex is true and we need to handle it. See C* Descriptor
-            skipPromotedIndex(input);
-
-            return offset;
+            return IndexEntry.read(input);
         } catch (IOException e) {
             throw new IOError(e);
         }
@@ -139,5 +101,19 @@ public class IndexOffsetScanner implements Closeable {
         }
 
         FileUtils.skipBytesFully(in, size);
+    }
+
+    public static class IndexEntry {
+        public long idxOffset, dataOffset;
+        public ByteBuffer key; // maybe add this
+
+        public static IndexEntry read(FSDataInputStream in) throws IOException {
+            IndexEntry retval = new IndexEntry();
+            retval.idxOffset = in.getPos();
+            ByteBufferUtil.readWithShortLength(in); // ignore key
+            retval.dataOffset = in.readLong();
+            skipPromotedIndex(in);
+            return retval;
+        }
     }
 }
