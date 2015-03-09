@@ -57,6 +57,10 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
         this.split = (SSTableSplit) inputSplit;
 
         final FileSystem fileSystem = FileSystem.get(context.getConfiguration());
+
+        // Temporary to get something working...re-initialize after the split has been serialized.
+        this.split.initialize(fileSystem);
+
         Config.setClientMode(true);
         final CompressionMetadata compressionMetadata =
                 CompressionMetadata.create(split.getPath().toString(), fileSystem);
