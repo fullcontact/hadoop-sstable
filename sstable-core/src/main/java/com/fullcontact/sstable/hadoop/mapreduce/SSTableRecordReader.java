@@ -20,6 +20,7 @@ import com.fullcontact.cassandra.io.compress.CompressionMetadata;
 import com.fullcontact.cassandra.io.util.RandomAccessReader;
 import com.google.common.base.Preconditions;
 import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.config.Config;
 import org.apache.cassandra.cql3.QueryProcessor;
 import org.apache.cassandra.cql3.statements.CreateTableStatement;
 import org.apache.cassandra.db.ColumnFamilyType;
@@ -56,6 +57,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
         this.split = (SSTableSplit) inputSplit;
 
         final FileSystem fileSystem = FileSystem.get(context.getConfiguration());
+        Config.setClientMode(true);
         final CompressionMetadata compressionMetadata =
                 CompressionMetadata.create(split.getPath().toString(), fileSystem);
         if (compressionMetadata == null) {
