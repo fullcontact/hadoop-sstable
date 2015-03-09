@@ -69,6 +69,6 @@ public class SSTableIndexIndexerTest {
         assertNotNull(index);
         assertEquals(1, index.getOffsets().size());
         assertEquals(0, index.getOffsets().get(0).getStart());
-        assertEquals(53, index.getOffsets().get(0).getEnd());
+        assertEquals(18, index.getOffsets().get(0).getEnd());
     }
 }
