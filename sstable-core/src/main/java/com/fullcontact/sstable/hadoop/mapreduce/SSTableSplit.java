@@ -178,4 +178,13 @@ public class SSTableSplit extends InputSplit implements Writable {
         return new long[]{}; // TODO
     }
 
+    public void close() {
+        if(indexReader != null) {
+            try {
+                indexReader.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

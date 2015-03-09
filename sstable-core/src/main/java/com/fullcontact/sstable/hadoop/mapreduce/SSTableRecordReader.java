@@ -106,6 +106,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
     public void close() throws IOException {
         if (reader != null) {
             reader.close();
+            split.close();
         }
     }
 
