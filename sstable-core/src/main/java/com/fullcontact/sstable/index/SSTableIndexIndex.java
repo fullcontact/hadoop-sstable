@@ -105,13 +105,17 @@ public class SSTableIndexIndex {
             final TLongArrayList splitOffsets = new TLongArrayList();
             long currentStart = 0;
             long currentEnd = 0;
+            long currentDataStart = 0;
+            long currentDataEnd = 0;
             final IndexOffsetScanner index = closer.register(new IndexOffsetScanner(sstablePath, fileSystem));
 
             while (index.hasNext()) {
                 // NOTE: This does not give an exact size of this split in bytes but a rough estimate.
                 // This should be good enough since it's only used for sorting splits by size in hadoop land.
-                while (currentEnd - currentStart < splitSize && index.hasNext()) {
-                    currentEnd = index.next().idxOffset;
+                while (currentDataEnd - currentDataStart < splitSize && index.hasNext()) {
+                    final IndexOffsetScanner.IndexEntry indexEntry = index.next();
+                    currentEnd = indexEntry.idxOffset;
+                    currentDataEnd = indexEntry.dataOffset;
                     splitOffsets.add(currentEnd);
                 }
 
@@ -124,8 +128,11 @@ public class SSTableIndexIndex {
                 splitOffsets.clear();
 
                 if (index.hasNext()) {
-                    currentStart = index.next().idxOffset;
+                    final IndexOffsetScanner.IndexEntry indexEntry = index.next();
+                    currentStart = indexEntry.idxOffset;
+                    currentDataStart = indexEntry.dataOffset;
                     currentEnd = currentStart;
+                    currentDataEnd = currentDataStart;
                     splitOffsets.add(currentStart);
                 }
             }
