@@ -50,6 +50,8 @@ public class SSTableSplit extends InputSplit implements Writable {
     private Path dataFile;
     private String[] hosts;
 
+    private boolean initialized;
+
     public SSTableSplit() {
     }
 
@@ -87,15 +89,20 @@ public class SSTableSplit extends InputSplit implements Writable {
 
         // back to "zero" (for this split)
         indexReader.seek(idxStart);
+
+        this.initialized = true;
+        System.out.println("Initialized split: " + this);
     }
 
     @Override
-    public String toString() {  // TODO
+    public String toString() {
         return "SSTableSplit{" +
-                "idxStart=" + idxStart +
+                "dataStart=" + dataStart +
+                ", dataEnd=" + dataEnd +
+                ", idxStart=" + idxStart +
+                ", length=" + length +
                 ", idxEnd=" + idxEnd +
                 ", dataFile=" + dataFile +
-                ", length=" + length +
                 ", hosts=" + Arrays.toString(hosts) +
                 '}';
     }
@@ -143,10 +150,12 @@ public class SSTableSplit extends InputSplit implements Writable {
      * Given an offset into the index file, return the corresponding index into the data file.
      */
     public long getStart() {
+        if(!initialized) throw new IllegalStateException("Split not initialized");
         return dataStart;
     }
 
     public long getEnd() {
+        if(!initialized) throw new IllegalStateException("Split not initialized");
         return dataEnd;
     }
 
@@ -157,6 +166,8 @@ public class SSTableSplit extends InputSplit implements Writable {
     // warning - STATEFUL
     // TODO move some of this to IndexOffsetScanner
     public long getDataSize() throws IOException {
+        if(!initialized) throw new IllegalStateException("Split not initialized");
+
         long rowStart = 0;
         if (indexReader.available() != 0) {
             ByteBufferUtil.readWithShortLength(indexReader);
