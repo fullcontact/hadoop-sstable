@@ -73,8 +73,6 @@ public class SSTableSplit extends InputSplit implements Writable {
         this.idxStart = start;
         this.idxEnd = end;
         this.hosts = hosts;
-
-        initialize(fs);
     }
 
     public void initialize(FileSystem fs) throws IOException {
