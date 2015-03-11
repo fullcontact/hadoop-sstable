@@ -114,8 +114,8 @@ public class SSTableIndexIndex {
                 // This should be good enough since it's only used for sorting splits by size in hadoop land.
                 while (currentDataEnd - currentDataStart < splitSize && index.hasNext()) {
                     final IndexOffsetScanner.IndexEntry indexEntry = index.next();
-                    currentEnd = indexEntry.idxOffset;
-                    currentDataEnd = indexEntry.dataOffset;
+                    currentEnd = indexEntry.getIdxOffset();
+                    currentDataEnd = indexEntry.getDataOffset();
                     splitOffsets.add(currentEnd);
                 }
 
@@ -129,8 +129,8 @@ public class SSTableIndexIndex {
 
                 if (index.hasNext()) {
                     final IndexOffsetScanner.IndexEntry indexEntry = index.next();
-                    currentStart = indexEntry.idxOffset;
-                    currentDataStart = indexEntry.dataOffset;
+                    currentStart = indexEntry.getIdxOffset();
+                    currentDataStart = indexEntry.getDataOffset();
                     currentEnd = currentStart;
                     currentDataEnd = currentDataStart;
                     splitOffsets.add(currentStart);

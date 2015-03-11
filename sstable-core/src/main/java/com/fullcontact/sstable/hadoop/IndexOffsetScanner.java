@@ -26,7 +26,6 @@ import java.io.Closeable;
 import java.io.DataInput;
 import java.io.IOError;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /**
  * Index scanner reads offsets from an SSTable index.
@@ -104,8 +103,8 @@ public class IndexOffsetScanner implements Closeable {
     }
 
     public static class IndexEntry {
-        public long idxOffset, dataOffset;
-        public ByteBuffer key; // maybe add this
+        private long idxOffset;
+        private long dataOffset;
 
         public static IndexEntry read(FSDataInputStream in) throws IOException {
             IndexEntry retval = new IndexEntry();
@@ -114,6 +113,14 @@ public class IndexOffsetScanner implements Closeable {
             retval.dataOffset = in.readLong();
             skipPromotedIndex(in);
             return retval;
+        }
+
+        public long getIdxOffset() {
+            return idxOffset;
+        }
+
+        public long getDataOffset() {
+            return dataOffset;
         }
     }
 }
