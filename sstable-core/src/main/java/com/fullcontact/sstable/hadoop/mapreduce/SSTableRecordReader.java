@@ -62,8 +62,12 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
         this.split.initialize(fileSystem);
 
         Config.setClientMode(true);
+        final String pathString = split.getPath().toString();
+        if (!pathString.contains("-jb-")) {
+            throw new IllegalArgumentException("Expected data file in `jb` format, but got: " + pathString);
+        }
         final CompressionMetadata compressionMetadata =
-                CompressionMetadata.create(split.getPath().toString(), fileSystem);
+                CompressionMetadata.create(pathString, fileSystem);
         if (compressionMetadata == null) {
             throw new IOException("Compression metadata for file " + split.getPath() + " not found, cannot run");
         }
