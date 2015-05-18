@@ -55,7 +55,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
     public void initialize(InputSplit inputSplit, TaskAttemptContext context) throws IOException, InterruptedException {
         this.split = (SSTableSplit) inputSplit;
 
-        final FileSystem fileSystem = FileSystem.get(context.getConfiguration());
+        final FileSystem fileSystem = FileSystem.get(this.split.getPath().toUri(), context.getConfiguration());
         final CompressionMetadata compressionMetadata =
                 CompressionMetadata.create(split.getPath().toString(), fileSystem);
         if (compressionMetadata == null) {
