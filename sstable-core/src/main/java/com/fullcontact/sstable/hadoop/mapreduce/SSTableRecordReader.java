@@ -42,7 +42,6 @@ import java.io.IOException;
  * @author ben <ben.vanberg@fullcontact.com>
  */
 public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
-    public static final String SSTABLE_INPUT_FILES_ISCOMPRESSION = "hadoop-sstable.input.files.isCompression";
     private SSTableSplit split;
     private RandomAccessReader reader;
 
@@ -58,7 +57,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
         final FileSystem fileSystem = FileSystem.get(context.getConfiguration());
 
         // open the file and seek to the start of the split
-        if (context.getConfiguration().getBoolean(SSTABLE_INPUT_FILES_ISCOMPRESSION, true)) {
+        if (context.getConfiguration().getBoolean(HadoopSSTableConstants.HADOOP_SSTABLE_FILES_ISCOMPRESSION, true)) {
             final CompressionMetadata compressionMetadata =
                     CompressionMetadata.create(split.getPath().toString(), fileSystem);
             if (compressionMetadata == null) {

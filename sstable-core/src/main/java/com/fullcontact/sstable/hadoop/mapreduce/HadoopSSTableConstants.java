@@ -44,4 +44,10 @@ public interface HadoopSSTableConstants {
      * SSTable split size in MB.
      */
     public static final String HADOOP_SSTABLE_SPLIT_MB = "hadoop.sstable.split.mb";
+
+    /**
+     * SSTable is compressed or not
+     */
+    public static final String HADOOP_SSTABLE_FILES_ISCOMPRESSION = "hadoop.sstable.files.isCompression";
+
 }
