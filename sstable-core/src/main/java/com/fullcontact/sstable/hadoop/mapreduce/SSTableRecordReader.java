@@ -42,9 +42,9 @@ import java.io.IOException;
  * @author ben <ben.vanberg@fullcontact.com>
  */
 public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
-
+    public static final String SSTABLE_INPUT_FILES_ISCOMPRESSION = "hadoop-sstable.input.files.isCompression";
     private SSTableSplit split;
-    private CompressedRandomAccessReader reader;
+    private RandomAccessReader reader;
 
     private K key;
     private V value;
@@ -56,14 +56,18 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
         this.split = (SSTableSplit) inputSplit;
 
         final FileSystem fileSystem = FileSystem.get(context.getConfiguration());
-        final CompressionMetadata compressionMetadata =
-                CompressionMetadata.create(split.getPath().toString(), fileSystem);
-        if (compressionMetadata == null) {
-            throw new IOException("Compression metadata for file " + split.getPath() + " not found, cannot run");
-        }
 
         // open the file and seek to the start of the split
-        this.reader = CompressedRandomAccessReader.open(split.getPath(), compressionMetadata, false, fileSystem);
+        if (context.getConfiguration().getBoolean(SSTABLE_INPUT_FILES_ISCOMPRESSION, true)) {
+            final CompressionMetadata compressionMetadata =
+                    CompressionMetadata.create(split.getPath().toString(), fileSystem);
+            if (compressionMetadata == null) {
+                throw new IOException("Compression metadata for file " + split.getPath() + " not found, cannot run");
+            }
+            this.reader = CompressedRandomAccessReader.open(split.getPath(), compressionMetadata, false, fileSystem);
+        } else {
+            this.reader = RandomAccessReader.open(split.getPath(), fileSystem);
+        }
         this.reader.seek(split.getStart());
 
         this.cfMetaData = initializeCfMetaData(context);
@@ -112,7 +116,7 @@ public abstract class SSTableRecordReader<K, V> extends RecordReader<K, V> {
     }
 
     protected boolean hasMore() {
-        return reader.getFilePointer() < split.getEnd();
+        return reader.getFilePointer() <= split.getEnd();
     }
 
     private static CFMetaData initializeCfMetaData(TaskAttemptContext context) {
