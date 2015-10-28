@@ -2,6 +2,14 @@
 
 Hadoop SSTable is an InputFormat implementation that supports reading and splitting Cassandra SSTables. Leveraging this input format MapReduce jobs can make use of Cassandra data for offline data analysis.
 
+## Cassandra Version Support
+
+###Supported
+- Cassandra 1.2
+- Cassandra 2.0.x
+
+Currently Cassandra 2.1.x is not supported.
+
 ## Getting Started
 
 See a full example to get a feel for how to write your own jobs leveraging hadoop-sstable.
