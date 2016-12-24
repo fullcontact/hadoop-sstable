@@ -31,7 +31,7 @@ import java.util.Arrays;
  *
  * @author ben <ben.vanberg@fullcontact.com>
  */
-public class SSTableSplit extends InputSplit implements Writable {
+public class SSTableSplit  extends InputSplit implements Writable, org.apache.hadoop.mapred.InputSplit {
 
     private long start;
     private long end;
@@ -76,7 +76,7 @@ public class SSTableSplit extends InputSplit implements Writable {
     }
 
     @Override
-    public long getLength() throws IOException, InterruptedException {
+    public long getLength() throws IOException {
         return length;
     }
 
